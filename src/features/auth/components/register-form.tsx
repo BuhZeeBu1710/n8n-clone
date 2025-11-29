@@ -56,7 +56,7 @@ export function RegisterForm() {
       {
         name: values.email,
         email: values.email,
-        password: values.email,
+        password: values.password,
         callbackURL: "/",
       },
       {
