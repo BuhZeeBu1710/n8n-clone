@@ -18,6 +18,14 @@ export const useSuspenseWorkflows = () => {
 };
 
 /**
+ * Hook to fetch a single workflow using suspense
+ */
+export const useSuspenseSingleWorkflow = (id: string) => {
+  const trpc = useTRPC();
+  return useSuspenseQuery(trpc.workflows.getOne.queryOptions({ id }));
+};
+
+/**
  * Hook to create a new workflow
  */
 export const useCreateWorkflow = () => {
@@ -38,6 +46,29 @@ export const useCreateWorkflow = () => {
 };
 
 /**
+ * Hook to update workflow name
+ */
+export const useUpdateWorkflowName = () => {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  return useMutation(
+    trpc.workflows.updateName.mutationOptions({
+      onSuccess: (data) => {
+        toast.success(`Workflow ${data.name} updated successfully`);
+        queryClient.invalidateQueries(trpc.workflows.getMany.queryOptions({}));
+        queryClient.invalidateQueries(
+          trpc.workflows.getOne.queryOptions({ id: data.id })
+        );
+      },
+      onError: (error) => {
+        toast.error(`Failed to update workflow name: ${error.message}`);
+      },
+    })
+  );
+};
+
+/**
  * Hook to remove a workflow
  */
 export const useRemoveWorkflow = () => {
@@ -52,6 +83,9 @@ export const useRemoveWorkflow = () => {
         queryClient.invalidateQueries(
           trpc.workflows.getOne.queryFilter({ id: data.id })
         );
+      },
+      onError: (error) => {
+        toast.error(`Failed to remove workflow: ${error.message}`);
       },
     })
   );
