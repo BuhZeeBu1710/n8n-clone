@@ -44,38 +44,28 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (values: HttpRequestDialogValues) => void;
-  defaultEndpoint?: string;
-  defaultMethod?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
-  defaultBody?: string;
+  defaultValues?: Partial<HttpRequestDialogValues>;
 }
 
 export const HttpRequestDialog = ({
   open,
   onOpenChange,
   onSubmit,
-  defaultEndpoint,
-  defaultMethod = "GET",
-  defaultBody,
+  defaultValues,
 }: Props) => {
   const form = useForm<HttpRequestDialogValues>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      endpoint: defaultEndpoint,
-      method: defaultMethod,
-      body: defaultBody,
-    },
+    defaultValues,
   });
 
   // Reset form values when dialog opens with new defaults
   useEffect(() => {
     if (open) {
       form.reset({
-        endpoint: defaultEndpoint,
-        method: defaultMethod,
-        body: defaultBody,
+        ...defaultValues,
       });
     }
-  }, [open, form, defaultEndpoint, defaultMethod, defaultBody]);
+  }, [open, form, defaultValues]);
 
   const watchMethod = form.watch("method");
   const showBodyField = ["POST", "PUT", "PATCH"].includes(watchMethod);
