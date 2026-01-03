@@ -1,11 +1,19 @@
 import { NodeExecutor } from "@/features/executions/types";
 import { NonRetriableError } from "inngest";
 import ky, { type Options as KyOptions } from "ky";
+import Handlebars from "handlebars";
+
+Handlebars.registerHelper("json", (context) => {
+  const jsonString = JSON.stringify(context, null, 2);
+  const safeString = new Handlebars.SafeString(jsonString);
+
+  return safeString;
+});
 
 type HttpRequestData = {
-  variableName?: string;
-  endpoint?: string;
-  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  variableName: string;
+  endpoint: string;
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   body?: string;
 };
 
@@ -15,26 +23,34 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
   context,
   step,
 }) => {
-  // TODO: Pyblish "loading" state for HTTP request
-
+  // TODO: Publish "loading" state for HTTP request
+  // In runtime, user may bypass the executor and directly call the endpoint using ky so we need to handle that.
   if (!data.variableName) {
     // TODO: Publish "error" state for HTTP request
-    throw new NonRetriableError("HTTP Request node: Variable name is required");
+    throw new NonRetriableError("Variable name is required");
   }
 
   if (!data.endpoint) {
     // TODO: Publish "error" state for HTTP request
-    throw new NonRetriableError("HTTP Request node: Endpoint is required");
+    throw new NonRetriableError("Endpoint is required");
+  }
+
+  if (!data.method) {
+    // TODO: Publish "error" state for HTTP request
+    throw new NonRetriableError("Method is required");
   }
 
   const result = await step.run("http-request", async () => {
-    const endpoint = data.endpoint!;
-    const method = data.method || "GET";
+    // http://localhost:3000/users/{{httpResponse.data.id}}
+    const endpoint = Handlebars.compile(data.endpoint)(context);
+    const method = data.method;
 
     const options: KyOptions = { method };
 
     if (["POST", "PUT", "PATCH"].includes(method)) {
-      options.body = data.body;
+      const resolvedBody = Handlebars.compile(data.body || "{}")(context);
+      JSON.parse(resolvedBody);
+      options.body = resolvedBody;
       options.headers = {
         ...(context.httpHeaders || {}),
         "Content-Type": "application/json",
@@ -55,22 +71,11 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
       },
     };
 
-    if (data.variableName) {
-      // Store the response in the context under the variable name
-      return {
-        ...context,
-        [data.variableName]: responsePayload,
-      };
-    }
-
-    // Fallback to direct httpResponse for backwards compatibility
     return {
       ...context,
-      ...responsePayload,
+      [data.variableName]: responsePayload,
     };
   });
-
-  // TODOL Publish "success" state for HTTP request
 
   return result;
 };
