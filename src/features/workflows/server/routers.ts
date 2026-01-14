@@ -10,6 +10,7 @@ import { PAGINATION } from "@/config/constants";
 import { NodeType } from "@/generated/enums";
 import { Edge, Node, XYPosition } from "@xyflow/react";
 import { inngest } from "@/inngest/client";
+import { sendWorkflowExecution } from "@/inngest/utils";
 
 export const workflowsRouter = createTRPCRouter({
   execute: protectedProcedure
@@ -22,11 +23,8 @@ export const workflowsRouter = createTRPCRouter({
         },
       });
 
-      await inngest.send({
-        name: "workflows/execute.workflow",
-        data: {
-          workflowId: workflow.id,
-        }
+      await sendWorkflowExecution({
+        workflowId: workflow.id,
       });
 
       return workflow;
