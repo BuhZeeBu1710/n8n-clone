@@ -12,9 +12,9 @@ Handlebars.registerHelper("json", (context) => {
 });
 
 type HttpRequestData = {
-  variableName: string;
-  endpoint: string;
-  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+  variableName?: string;
+  endpoint?: string;
+  method?: "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
   body?: string;
 };
 
@@ -32,39 +32,39 @@ export const httpRequestExecutor: NodeExecutor<HttpRequestData> = async ({
     })
   );
 
-  // In runtime, user may bypass the executor and directly call the endpoint using ky so we need to handle that.
-  if (!data.variableName) {
-    await publish(
-      httpRequestChannel().status({
-        nodeId,
-        status: "error",
-      })
-    );
-    throw new NonRetriableError("Variable name is required");
-  }
-
-  if (!data.endpoint) {
-    await publish(
-      httpRequestChannel().status({
-        nodeId,
-        status: "error",
-      })
-    );
-    throw new NonRetriableError("Endpoint is required");
-  }
-
-  if (!data.method) {
-    await publish(
-      httpRequestChannel().status({
-        nodeId,
-        status: "error",
-      })
-    );
-    throw new NonRetriableError("Method is required");
-  }
-
   try {
     const result = await step.run("http-request", async () => {
+      // In runtime, user may bypass the executor and directly call the endpoint using ky so we need to handle that.
+      if (!data.variableName) {
+        await publish(
+          httpRequestChannel().status({
+            nodeId,
+            status: "error",
+          })
+        );
+        throw new NonRetriableError("Variable name is required");
+      }
+
+      if (!data.endpoint) {
+        await publish(
+          httpRequestChannel().status({
+            nodeId,
+            status: "error",
+          })
+        );
+        throw new NonRetriableError("Endpoint is required");
+      }
+
+      if (!data.method) {
+        await publish(
+          httpRequestChannel().status({
+            nodeId,
+            status: "error",
+          })
+        );
+        throw new NonRetriableError("Method is required");
+      }
+
       // http://localhost:3000/users/{{httpResponse.data.id}}
       const endpoint = Handlebars.compile(data.endpoint)(context);
       const method = data.method;
